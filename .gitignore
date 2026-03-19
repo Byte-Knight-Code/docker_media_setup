@@ -1,0 +1,53 @@
+# Environment files (secrets, passwords, API keys)
+.env
+.env.*
+*.env
+.env.local
+.env.example
+
+# Service configuration directories
+# These contain databases, credentials, and personal data
+# Note: Keep empty directories by adding .gitkeep files
+config/**
+.config/**
+
+# Media files (user content - huge, should never be in git)
+media/
+downloads/
+
+# Logs (can contain sensitive info)
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*-journal
+*.wal
+*.shm
+
+# Docker volumes (persistent data)
+volumes/
+
+# OS files
+.DS_Store
+Thumbs.db
+*~
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# System files
+*.pid
+*.lock
+*.seed
