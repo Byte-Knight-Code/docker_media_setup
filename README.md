@@ -248,7 +248,7 @@ For advanced configuration, see the [Homepage documentation](https://gethomepage
    - Movies (`/jelly_media/movies`)
    - TV Shows (`/jelly_media/shows`)
 4. Configure metadata agents (TMDb, TVDB)
-For more details, see the [Jellyfin documentation](https://docs.jellyfin.org/general/server-admin/media/libraries/).
+For more details, see the [Jellyfin documentation](https://jellyfin.org/docs/).
 
 ---
 
