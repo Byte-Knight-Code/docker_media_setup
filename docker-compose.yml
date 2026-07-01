@@ -1,68 +1,36 @@
 services:
-  # Media server for watching 
-  jellyfin:
-    image: jellyfin/jellyfin
-    container_name: jellyfin
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
     environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_PROVIDER=
+      - WIREGUARD_ADDRESSES=10.2.0.2/32
+      - SERVER_COUNTRIES=United States
       - TZ=America/New_York
-    volumes:
-      - ./config/jellyfin:/config
-      - ./config/jellyfin/cache:/cache
-      - ./media/jelly_media:/jelly_media
-    ports:
-      - "8096:8096"
-
-  #for cleaning up tv shows
-  sonarr:
-    image: lscr.io/linuxserver/sonarr
-    container_name: sonarr
-    restart: unless-stopped
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-    volumes:
-      - ./config/sonarr:/config
-      - ./media/jelly_media/shows:/shows
-      - ./media/downloads:/downloads
-    ports:
-      - "8989:8989"
-
-  #For cleaning up movies and setup for jellyfin
-  radarr:
-    image: lscr.io/linuxserver/radarr
-    container_name: radarr
-    restart: unless-stopped
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-    volumes:
-      - ./config/radarr:/config
-      - ./media/jelly_media/movies:/movies
-      - ./media/downloads:/downloads
-    ports:
-      - "7878:7878"
-  # indexer manager and proxy for finding torrents.
-  prowlarr:
-    image: lscr.io/linuxserver/prowlarr
-    container_name: prowlarr
-    restart: unless-stopped
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-    volumes:
-      - ./config/prowlarr:/config
     ports:
       - "9696:9696"
+      - "8080:8080"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+    volumes:
+      - ./config/gluetun:/gluetun
 
-  #Learn about torrenting if your using this and if you are make sure you SEED things
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent
     container_name: qbittorrent
     restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
     environment:
       - PUID=1000
       - PGID=1000
@@ -70,13 +38,76 @@ services:
       - WEBUI_PORT=8080
     volumes:
       - ./config/qbittorrent:/config
-      - ./media/downloads:/downloads
-    ports:
-      - "8080:8080"
+      - /mnt/jelly_media/downloads:/downloads
 
-  #This is for adding new media and being able to have others add new media
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - /mnt/jelly_media/appdata/jellyfin:/config
+      - /mnt/jellyfin_media/appdata/jellyfin/cache:/cache
+      - /mnt/jelly_media:/jelly_media
+    ports:
+      - "8096:8096"
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr
+    container_name: sonarr
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ./config/sonarr:/config
+      - /mnt/jelly_media/anime:/anime
+      - /mnt/jelly_media/shows:/shows
+      - /mnt/jelly_media/downloads:/downloads
+    ports:
+      - "8989:8989"
+
+  radarr:
+    image: lscr.io/linuxserver/radarr
+    container_name: radarr
+    restart: unless-stopped
+    dns:
+      - 1.1.1.1
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ./config/radarr:/config
+      - /mnt/jelly_media/movies:/movies
+      - /mnt/jelly_media/downloads:/downloads
+    ports:
+      - "7878:7878"
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr
+    container_name: prowlarr
+    restart: unless-stopped
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ./config/prowlarr:/config
+
   jellyseerr:
-    image: fallenbagel/jellyseerr
+    image: ghcr.io/seerr-team/seerr:latest
     container_name: jellyseerr
     restart: unless-stopped
     environment:
@@ -86,7 +117,6 @@ services:
     ports:
       - "5055:5055"
 
-  # This is for if you need to remember all the local sites.
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
@@ -99,4 +129,14 @@ services:
     environment:
       - TZ=America/New_York
       - HOMEPAGE_ALLOWED_HOSTS=*
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - TZ=America/New_York
+    ports:
+      - "8191:8191"
 
